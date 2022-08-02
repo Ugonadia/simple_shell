@@ -1,41 +1,104 @@
-#include "main.h"
+#include "shell.h"
+
+int token_len(char *str, char *delim);
+int count_tokens(char *str, char *delim);
+char **_strtok(char *line, char *delim);
 
 /**
- * tokens_fun - split command arguments
- * @line: pointer to command arguments
+ * token_len - Locates the delimiter index marking the end
+ *             of the first token contained within a string.
+ * @str: The string to be searched.
+ * @delim: The delimiter character.
  *
- * Return: line of pointer.
+ * Return: The delimiter index marking the end of
+ *         the intitial token pointed to be str.
  */
-char **tokens_fun(char *lnptr)
+int token_len(char *str, char *delim)
 {
-	int bufsize = BUFSIZE, i = 0;
-	char **tokens = malloc(bufsize * sizeof(char*));
-	char *token;
+	int index = 0, len = 0;
 
-	if (!tokens)
+	while (*(str + index) && *(str + index) != *delim)
 	{
-		write(STDOUT_FILENO,"mem alloc error\n",16);
-		exit(EXIT_FAILURE);
+		len++;
+		index++;
 	}
-	token = strtok(lnptr, DELIM);
-	while (token != NULL)
-	{
-		tokens[i] = token;
-		token = strtok(NULL, DELIM);
-		i++;
-		if (i >= bufsize)
-		{
-			bufsize += BUFSIZE;
-			tokens = realloc(tokens, bufsize * sizeof(char*));
-			if (!tokens)
-			{
-				write(STDOUT_FILENO,"mem alloc error\n",16);
-				exit(EXIT_FAILURE);
-			}
-			token = strtok(NULL, DELIM);
-		}
-	}
-	tokens[i] = NULL;
-	return tokens;
+
+	return (len);
 }
 
+/**
+ * count_tokens - Counts the number of delimited
+ *                words contained within a string.
+ * @str: The string to be searched.
+ * @delim: The delimiter character.
+ *
+ * Return: The number of words contained within str.
+ */
+int count_tokens(char *str, char *delim)
+{
+	int index, tokens = 0, len = 0;
+
+	for (index = 0; *(str + index); index++)
+		len++;
+
+	for (index = 0; index < len; index++)
+	{
+		if (*(str + index) != *delim)
+		{
+			tokens++;
+			index += token_len(str + index, delim);
+		}
+	}
+
+	return (tokens);
+}
+
+/**
+ * _strtok - Tokenizes a string.
+ * @line: The string.
+ * @delim: The delimiter character to tokenize the string by.
+ *
+ * Return: A pointer to an array containing the tokenized words.
+ */
+char **_strtok(char *line, char *delim)
+{
+	char **ptr;
+	int index = 0, tokens, t, letters, l;
+
+	tokens = count_tokens(line, delim);
+	if (tokens == 0)
+		return (NULL);
+
+	ptr = malloc(sizeof(char *) * (tokens + 2));
+	if (!ptr)
+		return (NULL);
+
+	for (t = 0; t < tokens; t++)
+	{
+		while (line[index] == *delim)
+			index++;
+
+		letters = token_len(line + index, delim);
+
+		ptr[t] = malloc(sizeof(char) * (letters + 1));
+		if (!ptr[t])
+		{
+			for (index -= 1; index >= 0; index--)
+				free(ptr[index]);
+			free(ptr);
+			return (NULL);
+		}
+
+		for (l = 0; l < letters; l++)
+		{
+			ptr[t][l] = line[index];
+			index++;
+		}
+
+		ptr[t][l] = '\0';
+	}
+	ptr[t] = NULL;
+	ptr[t + 1] = NULL;
+
+	return (ptr);
+}
